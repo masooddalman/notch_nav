@@ -1,3 +1,5 @@
+![NotchNav Banner](assets/banner.png)
+
 # NotchNav
 
 A highly customizable Flutter bottom navigation bar with a notch-style pop-up indicator. The selected item rises above the bar inside an animated shape, with a smooth cutout notch in the bar background.
@@ -157,6 +159,10 @@ NotchNav(
 | ![Square Minimal](assets/type5.png) | ![Diamond Emerald](assets/type6.png) |
 | **Bouncy Circle** | **Slow Square** |
 | ![Bouncy Circle](assets/type7.png) | ![Slow Square](assets/type8.png) |
+
+##Screen record
+
+https://github.com/user-attachments/assets/6b67c04f-50bb-4aba-83b2-0c0e9f494c5e
 
 ## All Parameters
 
