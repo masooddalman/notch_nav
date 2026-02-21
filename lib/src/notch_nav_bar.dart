@@ -7,12 +7,6 @@ enum NotchNavLabelBehavior {
   /// Only the selected item shows its label.
   selectedOnly,
 
-  /// All items show their labels.
-  all,
-
-  /// Only unselected items show their labels.
-  unselectedOnly,
-
   /// No labels are shown.
   none,
 }
@@ -102,6 +96,9 @@ class NotchNav extends StatelessWidget {
   /// Controls which labels are shown. Defaults to [NotchNavLabelBehavior.selectedOnly].
   final NotchNavLabelBehavior labelBehavior;
 
+  /// Whether the selected item's label shifts up to align with unselected items' icons.
+  final bool alignSelectedLabel;
+
   /// Creates a [NotchNav] widget.
   const NotchNav({
     super.key,
@@ -114,7 +111,7 @@ class NotchNav extends StatelessWidget {
     this.inactiveIconColor = const Color(0xFF9E9E9E),
     this.labelColor = const Color(0xFF424242),
     this.labelStyle,
-    this.barHeight = 64,
+    this.barHeight = 96,
     this.barBorderRadius = 16,
     this.circleSize = 52,
     this.iconSize = 26,
@@ -127,6 +124,7 @@ class NotchNav extends StatelessWidget {
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.easeInOut,
     this.labelBehavior = NotchNavLabelBehavior.selectedOnly,
+    this.alignSelectedLabel = true,
   }) : assert(items.length >= 2, 'NotchNav requires at least 2 items'),
        assert(currentIndex >= 0, 'currentIndex must be non-negative'),
        assert(
@@ -138,9 +136,7 @@ class NotchNav extends StatelessWidget {
 
   bool _showLabel(bool isSelected) {
     return switch (labelBehavior) {
-      NotchNavLabelBehavior.all => true,
       NotchNavLabelBehavior.selectedOnly => isSelected,
-      NotchNavLabelBehavior.unselectedOnly => !isSelected,
       NotchNavLabelBehavior.none => false,
     };
   }
@@ -155,43 +151,92 @@ class NotchNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final circleTop = _circleOffset - circleSize / 2;
+
     return Padding(
       padding: margin,
       child: SizedBox(
         height: barHeight + _circleOffset,
-        child: Stack(
-          children: [
-            // Bar background
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: barHeight,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: BorderRadius.circular(barBorderRadius),
-                  boxShadow:
-                      barShadow ??
-                      const [
-                        BoxShadow(
-                          color: Color(0x14000000),
-                          blurRadius: 16,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final contentWidth = constraints.maxWidth - 2 * horizontalPadding;
+            final itemWidth = contentWidth / items.length;
+            final circleLeft =
+                horizontalPadding +
+                currentIndex * itemWidth +
+                (itemWidth - circleSize) / 2;
+
+            return Stack(
+              children: [
+                // Bar background
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: barHeight,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: backgroundColor,
+                      borderRadius: BorderRadius.circular(barBorderRadius),
+                      boxShadow:
+                          barShadow ??
+                          const [
+                            BoxShadow(
+                              color: Color(0x14000000),
+                              blurRadius: 16,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            // Navigation items
-            Positioned(
-              left: horizontalPadding,
-              right: horizontalPadding,
-              top: 0,
-              bottom: 0,
-              child: Row(children: List.generate(items.length, _buildNavItem)),
-            ),
-          ],
+                // Sliding circle (always at top, moves horizontally)
+                AnimatedPositioned(
+                  duration: animationDuration,
+                  curve: animationCurve,
+                  top: circleTop,
+                  left: circleLeft,
+                  width: circleSize,
+                  height: circleSize,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: activeColor,
+                      boxShadow:
+                          circleShadow ??
+                          [
+                            BoxShadow(
+                              color: activeColor.withValues(alpha: 0.3),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                    ),
+                  ),
+                ),
+                // Navigation item icons
+                Positioned(
+                  left: horizontalPadding,
+                  right: horizontalPadding,
+                  top: 0,
+                  bottom: 0,
+                  child: Row(
+                    children: List.generate(items.length, _buildNavItem),
+                  ),
+                ),
+                // Labels (single shared row for perfect alignment)
+                if (labelBehavior != NotchNavLabelBehavior.none)
+                  Positioned(
+                    left: horizontalPadding,
+                    right: horizontalPadding,
+                    bottom: 8,
+                    child: Row(
+                      children: List.generate(items.length, _buildLabel),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -200,8 +245,11 @@ class NotchNav extends StatelessWidget {
   Widget _buildNavItem(int index) {
     final item = items[index];
     final isSelected = index == currentIndex;
-    final selectedTop = _circleOffset - circleSize / 2;
-    final unselectedTop = _circleOffset + (barHeight - circleSize) / 2;
+
+    // Icon positions
+    final selectedIconTop =
+        (_circleOffset - circleSize / 2) + (circleSize - iconSize) / 2;
+    final unselectedIconTop = _circleOffset + (barHeight - iconSize) / 2;
 
     return Expanded(
       child: Semantics(
@@ -214,79 +262,60 @@ class NotchNav extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               const SizedBox.expand(),
+              // Icon (animates vertically)
               AnimatedPositioned(
                 duration: animationDuration,
                 curve: animationCurve,
-                top: isSelected ? selectedTop : unselectedTop,
+                top: isSelected ? selectedIconTop : unselectedIconTop,
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Circle with icon
-                      AnimatedContainer(
-                        duration: animationDuration,
-                        curve: animationCurve,
-                        width: circleSize,
-                        height: circleSize,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isSelected ? activeColor : Colors.transparent,
-                          boxShadow: isSelected
-                              ? (circleShadow ??
-                                    [
-                                      BoxShadow(
-                                        color: activeColor.withValues(
-                                          alpha: 0.3,
-                                        ),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ])
-                              : null,
-                        ),
-                        child: Center(
-                          child: TweenAnimationBuilder<Color?>(
-                            tween: ColorTween(
-                              begin: isSelected
-                                  ? activeIconColor
-                                  : inactiveIconColor,
-                              end: isSelected
-                                  ? activeIconColor
-                                  : inactiveIconColor,
-                            ),
-                            duration: animationDuration,
-                            curve: animationCurve,
-                            builder: (context, color, _) =>
-                                Icon(item.icon, size: iconSize, color: color),
-                          ),
-                        ),
-                      ),
-                      // Label (animated reveal)
-                      if (labelBehavior != NotchNavLabelBehavior.none)
-                        ClipRect(
-                          child: AnimatedAlign(
-                            duration: animationDuration,
-                            curve: animationCurve,
-                            heightFactor: _showLabel(isSelected) ? 1.0 : 0.0,
-                            alignment: Alignment.topCenter,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                item.label,
-                                style: _labelStyle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                  child: TweenAnimationBuilder<Color?>(
+                    tween: ColorTween(
+                      begin: isSelected ? activeIconColor : inactiveIconColor,
+                      end: isSelected ? activeIconColor : inactiveIconColor,
+                    ),
+                    duration: animationDuration,
+                    curve: animationCurve,
+                    builder: (context, color, _) =>
+                        Icon(item.icon, size: iconSize, color: color),
                   ),
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLabel(int index) {
+    final isSelected = index == currentIndex;
+
+    // Shift selected label up to align with unselected icons' center
+    double yOffset = 0;
+    if (alignSelectedLabel && isSelected) {
+      final iconCenterY = _circleOffset + barHeight / 2;
+      final widgetHeight = barHeight + _circleOffset;
+      final labelCenterY = widgetHeight - 8 - labelFontSize / 2;
+      yOffset = iconCenterY - labelCenterY;
+    }
+
+    return Expanded(
+      child: Center(
+        child: AnimatedOpacity(
+          duration: animationDuration,
+          opacity: _showLabel(isSelected) ? 1.0 : 0.0,
+          child: AnimatedContainer(
+            duration: animationDuration,
+            curve: animationCurve,
+            transform: Matrix4.translationValues(0, yOffset, 0),
+            child: Text(
+              items[index].label,
+              style: _labelStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
       ),
