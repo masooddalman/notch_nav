@@ -4,6 +4,18 @@ import 'package:flutter/material.dart';
 
 import 'notch_nav_item.dart';
 
+/// Shape of the active item indicator in [NotchNav].
+enum NotchNavShape {
+  /// A circle (default).
+  circle,
+
+  /// A rounded square.
+  square,
+
+  /// A diamond (45° rotated square).
+  diamond,
+}
+
 /// Controls which item labels are visible in [NotchNav].
 enum NotchNavLabelBehavior {
   /// Only the selected item shows its label.
@@ -101,6 +113,9 @@ class NotchNav extends StatelessWidget {
   /// Whether the selected item's label shifts up to align with unselected items' icons.
   final bool alignSelectedLabel;
 
+  /// Shape of the active item indicator. Defaults to [NotchNavShape.circle].
+  final NotchNavShape shape;
+
   /// Gap between the active circle and the notch edge in the bar.
   final double notchMargin;
 
@@ -134,6 +149,7 @@ class NotchNav extends StatelessWidget {
     this.animationCurve = Curves.easeOutCirc,
     this.labelBehavior = NotchNavLabelBehavior.selectedOnly,
     this.alignSelectedLabel = true,
+    this.shape = NotchNavShape.circle,
     this.notchMargin = 6,
     this.notchCornerRadius,
   }) : assert(items.length >= 2, 'NotchNav requires at least 2 items'),
@@ -198,6 +214,7 @@ class NotchNav extends StatelessWidget {
                           filletRadius: notchCornerRadius ?? notchMargin,
                           backgroundColor: backgroundColor,
                           borderRadius: barBorderRadius,
+                          shape: shape,
                           shadows:
                               barShadow ??
                               const [
@@ -212,7 +229,7 @@ class NotchNav extends StatelessWidget {
                     },
                   ),
                 ),
-                // Sliding circle (always at top, moves horizontally)
+                // Sliding indicator (always at top, moves horizontally)
                 AnimatedPositioned(
                   duration: animationDuration,
                   curve: animationCurve,
@@ -220,21 +237,7 @@ class NotchNav extends StatelessWidget {
                   left: circleLeft,
                   width: circleSize,
                   height: circleSize,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: activeColor,
-                      boxShadow:
-                          circleShadow ??
-                          [
-                            BoxShadow(
-                              color: activeColor.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                    ),
-                  ),
+                  child: _buildIndicator(),
                 ),
                 // Navigation item icons
                 Positioned(
@@ -343,6 +346,56 @@ class NotchNav extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildIndicator() {
+    final shadow =
+        circleShadow ??
+        [
+          BoxShadow(
+            color: activeColor.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ];
+
+    switch (shape) {
+      case NotchNavShape.circle:
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: activeColor,
+            boxShadow: shadow,
+          ),
+        );
+      case NotchNavShape.square:
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(barBorderRadius),
+            color: activeColor,
+            boxShadow: shadow,
+          ),
+        );
+      case NotchNavShape.diamond:
+        // Shrink by 1/sqrt(2) so the rotated square fits within circleSize
+        final diamondSize = circleSize / sqrt(2);
+        return Center(
+          child: Transform.rotate(
+            angle: pi / 4,
+            child: SizedBox(
+              width: diamondSize,
+              height: diamondSize,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(barBorderRadius * 0.4),
+                  color: activeColor,
+                  boxShadow: shadow,
+                ),
+              ),
+            ),
+          ),
+        );
+    }
+  }
 }
 
 class _NotchBarPainter extends CustomPainter {
@@ -352,6 +405,7 @@ class _NotchBarPainter extends CustomPainter {
   final Color backgroundColor;
   final double borderRadius;
   final List<BoxShadow> shadows;
+  final NotchNavShape shape;
 
   const _NotchBarPainter({
     required this.notchCenterX,
@@ -360,6 +414,7 @@ class _NotchBarPainter extends CustomPainter {
     required this.backgroundColor,
     required this.borderRadius,
     required this.shadows,
+    required this.shape,
   });
 
   @override
@@ -382,6 +437,14 @@ class _NotchBarPainter extends CustomPainter {
   }
 
   Path _buildPath(Size size) {
+    return switch (shape) {
+      NotchNavShape.circle => _buildCircleNotch(size),
+      NotchNavShape.square => _buildSquareNotch(size),
+      NotchNavShape.diamond => _buildDiamondNotch(size),
+    };
+  }
+
+  Path _buildCircleNotch(Size size) {
     final r = borderRadius;
     final nr = notchRadius;
     final cx = notchCenterX;
@@ -408,11 +471,9 @@ class _NotchBarPainter extends CustomPainter {
 
     final path = Path();
 
-    // Start at top of left edge (after top-left corner)
     path.moveTo(0, r);
     path.arcToPoint(Offset(r, 0), radius: Radius.circular(r));
 
-    // Top edge to left fillet start
     path.lineTo(cx - filletOffsetX, 0);
 
     // Left fillet arc
@@ -439,22 +500,160 @@ class _NotchBarPainter extends CustomPainter {
       false,
     );
 
-    // Top edge to top-right corner
     path.lineTo(size.width - r, 0);
     path.arcToPoint(Offset(size.width, r), radius: Radius.circular(r));
-
-    // Right edge
     path.lineTo(size.width, size.height - r);
     path.arcToPoint(
       Offset(size.width - r, size.height),
       radius: Radius.circular(r),
     );
-
-    // Bottom edge
     path.lineTo(r, size.height);
     path.arcToPoint(Offset(0, size.height - r), radius: Radius.circular(r));
+    path.close();
 
-    // Left edge back to start
+    return path;
+  }
+
+  Path _buildSquareNotch(Size size) {
+    final r = borderRadius;
+    final nr = notchRadius;
+    final cx = notchCenterX;
+    final rf = filletRadius;
+    final depth = nr;
+
+    final path = Path();
+
+    path.moveTo(0, r);
+    path.arcToPoint(Offset(r, 0), radius: Radius.circular(r));
+
+    // Top edge to left fillet start
+    path.lineTo(cx - nr - rf, 0);
+
+    // Left top fillet: center at (cx-nr-rf, rf), from horizontal into left wall
+    path.arcTo(
+      Rect.fromCircle(center: Offset(cx - nr - rf, rf), radius: rf),
+      -pi / 2,
+      pi / 2,
+      false,
+    );
+
+    // Left wall down
+    path.lineTo(cx - nr, depth - rf);
+
+    // Bottom-left corner: center at (cx-nr+rf, depth-rf)
+    path.arcTo(
+      Rect.fromCircle(center: Offset(cx - nr + rf, depth - rf), radius: rf),
+      pi,
+      -pi / 2,
+      false,
+    );
+
+    // Bottom edge
+    path.lineTo(cx + nr - rf, depth);
+
+    // Bottom-right corner: center at (cx+nr-rf, depth-rf)
+    path.arcTo(
+      Rect.fromCircle(center: Offset(cx + nr - rf, depth - rf), radius: rf),
+      pi / 2,
+      -pi / 2,
+      false,
+    );
+
+    // Right wall up
+    path.lineTo(cx + nr, rf);
+
+    // Right top fillet: center at (cx+nr+rf, rf), from right wall into horizontal
+    path.arcTo(
+      Rect.fromCircle(center: Offset(cx + nr + rf, rf), radius: rf),
+      pi,
+      pi / 2,
+      false,
+    );
+
+    path.lineTo(size.width - r, 0);
+    path.arcToPoint(Offset(size.width, r), radius: Radius.circular(r));
+    path.lineTo(size.width, size.height - r);
+    path.arcToPoint(
+      Offset(size.width - r, size.height),
+      radius: Radius.circular(r),
+    );
+    path.lineTo(r, size.height);
+    path.arcToPoint(Offset(0, size.height - r), radius: Radius.circular(r));
+    path.close();
+
+    return path;
+  }
+
+  Path _buildDiamondNotch(Size size) {
+    final r = borderRadius;
+    final nr = notchRadius;
+    final cx = notchCenterX;
+    final rf = filletRadius;
+    final sqrt2 = sqrt(2);
+    final sqrt2h = sqrt2 / 2; // √2/2
+
+    // Top fillet centers (tangent to y=0 and to the 45° diagonal)
+    final leftFilletCx = cx - nr - rf * (sqrt2 - 1);
+    final rightFilletCx = cx + nr + rf * (sqrt2 - 1);
+
+    // Bottom point fillet center (tangent to both 45° diagonals)
+    final bottomFilletCy = nr - rf * sqrt2;
+
+    // Tangent points: left diagonal → bottom fillet
+    final leftDiagEndX = cx - rf * sqrt2h;
+    final leftDiagEndY = nr - rf * sqrt2h;
+
+    // Tangent points: right diagonal → right fillet
+    final rightDiagEndX = cx + nr - rf * (1 - sqrt2h);
+    final rightDiagEndY = rf * (1 - sqrt2h);
+
+    final path = Path();
+
+    path.moveTo(0, r);
+    path.arcToPoint(Offset(r, 0), radius: Radius.circular(r));
+
+    // Top edge to left fillet start
+    path.lineTo(leftFilletCx, 0);
+
+    // Left top fillet: from horizontal edge into 45° diagonal
+    path.arcTo(
+      Rect.fromCircle(center: Offset(leftFilletCx, rf), radius: rf),
+      -pi / 2,
+      pi / 4,
+      false,
+    );
+
+    // Left diagonal down to bottom fillet
+    path.lineTo(leftDiagEndX, leftDiagEndY);
+
+    // Bottom point fillet: sweeps from left diagonal to right diagonal
+    path.arcTo(
+      Rect.fromCircle(center: Offset(cx, bottomFilletCy), radius: rf),
+      3 * pi / 4,
+      -pi / 2,
+      false,
+    );
+
+    // Right diagonal up to right fillet
+    path.lineTo(rightDiagEndX, rightDiagEndY);
+
+    // Right top fillet: from 45° diagonal back to horizontal edge
+    path.arcTo(
+      Rect.fromCircle(center: Offset(rightFilletCx, rf), radius: rf),
+      -3 * pi / 4,
+      pi / 4,
+      false,
+    );
+
+    path.lineTo(size.width - r, 0);
+    path.arcToPoint(Offset(size.width, r), radius: Radius.circular(r));
+    path.lineTo(size.width, size.height - r);
+    path.arcToPoint(
+      Offset(size.width - r, size.height),
+      radius: Radius.circular(r),
+    );
+    path.lineTo(r, size.height);
+    path.arcToPoint(Offset(0, size.height - r), radius: Radius.circular(r));
     path.close();
 
     return path;
@@ -466,5 +665,6 @@ class _NotchBarPainter extends CustomPainter {
       old.notchRadius != notchRadius ||
       old.filletRadius != filletRadius ||
       old.backgroundColor != backgroundColor ||
-      old.borderRadius != borderRadius;
+      old.borderRadius != borderRadius ||
+      old.shape != shape;
 }
