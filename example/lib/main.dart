@@ -48,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: NotchNav(
         items: _items,
+        labelBehavior: NotchNavLabelBehavior.unselectedOnly,
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
       ),

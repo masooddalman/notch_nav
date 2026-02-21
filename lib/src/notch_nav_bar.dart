@@ -2,6 +2,21 @@ import 'package:flutter/material.dart';
 
 import 'notch_nav_item.dart';
 
+/// Controls which item labels are visible in [NotchNav].
+enum NotchNavLabelBehavior {
+  /// Only the selected item shows its label.
+  selectedOnly,
+
+  /// All items show their labels.
+  all,
+
+  /// Only unselected items show their labels.
+  unselectedOnly,
+
+  /// No labels are shown.
+  none,
+}
+
 /// A bottom navigation bar with a notch-style pop-up effect on the active item.
 ///
 /// The selected item's icon rises above the bar inside a colored circle,
@@ -84,6 +99,9 @@ class NotchNav extends StatelessWidget {
   /// Curve of the selection animation.
   final Curve animationCurve;
 
+  /// Controls which labels are shown. Defaults to [NotchNavLabelBehavior.selectedOnly].
+  final NotchNavLabelBehavior labelBehavior;
+
   /// Creates a [NotchNav] widget.
   const NotchNav({
     super.key,
@@ -108,6 +126,7 @@ class NotchNav extends StatelessWidget {
     this.circleShadow,
     this.animationDuration = const Duration(milliseconds: 300),
     this.animationCurve = Curves.easeInOut,
+    this.labelBehavior = NotchNavLabelBehavior.selectedOnly,
   }) : assert(items.length >= 2, 'NotchNav requires at least 2 items'),
        assert(currentIndex >= 0, 'currentIndex must be non-negative'),
        assert(
@@ -116,6 +135,15 @@ class NotchNav extends StatelessWidget {
        );
 
   double get _circleOffset => circleOffset ?? circleSize / 2;
+
+  bool _showLabel(bool isSelected) {
+    return switch (labelBehavior) {
+      NotchNavLabelBehavior.all => true,
+      NotchNavLabelBehavior.selectedOnly => isSelected,
+      NotchNavLabelBehavior.unselectedOnly => !isSelected,
+      NotchNavLabelBehavior.none => false,
+    };
+  }
 
   TextStyle get _labelStyle =>
       labelStyle ??
@@ -236,23 +264,24 @@ class NotchNav extends StatelessWidget {
                         ),
                       ),
                       // Label (animated reveal)
-                      ClipRect(
-                        child: AnimatedAlign(
-                          duration: animationDuration,
-                          curve: animationCurve,
-                          heightFactor: isSelected ? 1.0 : 0.0,
-                          alignment: Alignment.topCenter,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              item.label,
-                              style: _labelStyle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                      if (labelBehavior != NotchNavLabelBehavior.none)
+                        ClipRect(
+                          child: AnimatedAlign(
+                            duration: animationDuration,
+                            curve: animationCurve,
+                            heightFactor: _showLabel(isSelected) ? 1.0 : 0.0,
+                            alignment: Alignment.topCenter,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                item.label,
+                                style: _labelStyle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
