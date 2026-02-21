@@ -54,10 +54,18 @@ class NotchNav extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   /// Background color of the bar. Defaults to [Colors.white].
+  /// Ignored when [backgroundGradient] is provided.
   final Color backgroundColor;
 
+  /// Optional gradient for the bar background. Takes precedence over [backgroundColor].
+  final Gradient? backgroundGradient;
+
   /// Color of the selected item's circle.
+  /// Ignored when [activeGradient] is provided.
   final Color activeColor;
+
+  /// Optional gradient for the active indicator. Takes precedence over [activeColor].
+  final Gradient? activeGradient;
 
   /// Icon color of the selected item.
   final Color activeIconColor;
@@ -130,7 +138,9 @@ class NotchNav extends StatelessWidget {
     required this.currentIndex,
     required this.onTap,
     this.backgroundColor = Colors.white,
+    this.backgroundGradient,
     this.activeColor = const Color(0xFF6C63FF),
+    this.activeGradient,
     this.activeIconColor = Colors.white,
     this.inactiveIconColor = const Color(0xFF9E9E9E),
     this.labelColor = const Color(0xFF424242),
@@ -211,8 +221,9 @@ class NotchNav extends StatelessWidget {
                         painter: _NotchBarPainter(
                           notchCenterX: notchX,
                           notchRadius: circleSize / 2 + notchMargin,
-                          filletRadius: notchCornerRadius ?? notchMargin,
+                          filletRadius: notchCornerRadius,
                           backgroundColor: backgroundColor,
+                          backgroundGradient: backgroundGradient,
                           borderRadius: barBorderRadius,
                           shape: shape,
                           shadows:
@@ -363,7 +374,8 @@ class NotchNav extends StatelessWidget {
         return DecoratedBox(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: activeColor,
+            gradient: activeGradient,
+            color: activeGradient == null ? activeColor : null,
             boxShadow: shadow,
           ),
         );
@@ -372,7 +384,8 @@ class NotchNav extends StatelessWidget {
         return DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(cornerRadius),
-            color: activeColor,
+            gradient: activeGradient,
+            color: activeGradient == null ? activeColor : null,
             boxShadow: shadow,
           ),
         );
@@ -389,7 +402,8 @@ class NotchNav extends StatelessWidget {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(cornerRadius),
-                  color: activeColor,
+                  gradient: activeGradient,
+                  color: activeGradient == null ? activeColor : null,
                   boxShadow: shadow,
                 ),
               ),
@@ -405,6 +419,7 @@ class _NotchBarPainter extends CustomPainter {
   final double notchRadius;
   final double filletRadius;
   final Color backgroundColor;
+  final Gradient? backgroundGradient;
   final double borderRadius;
   final List<BoxShadow> shadows;
   final NotchNavShape shape;
@@ -414,6 +429,7 @@ class _NotchBarPainter extends CustomPainter {
     required this.notchRadius,
     required this.filletRadius,
     required this.backgroundColor,
+    this.backgroundGradient,
     required this.borderRadius,
     required this.shadows,
     required this.shape,
@@ -435,7 +451,15 @@ class _NotchBarPainter extends CustomPainter {
     }
 
     // Draw fill
-    canvas.drawPath(path, Paint()..color = backgroundColor);
+    final fillPaint = Paint();
+    if (backgroundGradient != null) {
+      fillPaint.shader = backgroundGradient!.createShader(
+        Offset.zero & size,
+      );
+    } else {
+      fillPaint.color = backgroundColor;
+    }
+    canvas.drawPath(path, fillPaint);
   }
 
   Path _buildPath(Size size) {
@@ -667,6 +691,7 @@ class _NotchBarPainter extends CustomPainter {
       old.notchRadius != notchRadius ||
       old.filletRadius != filletRadius ||
       old.backgroundColor != backgroundColor ||
+      old.backgroundGradient != backgroundGradient ||
       old.borderRadius != borderRadius ||
       old.shape != shape;
 }

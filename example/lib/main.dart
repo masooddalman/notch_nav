@@ -47,6 +47,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       bottomNavigationBar: NotchNav(
+        backgroundGradient: LinearGradient(
+          colors: [Colors.blue.shade100, Colors.purple.shade100],
+        ),
+        activeGradient: LinearGradient(
+          colors: [Colors.blue, Colors.purple],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         items: _items,
         margin: const EdgeInsets.all(0),
         notchCornerRadius: 4,
