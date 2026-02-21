@@ -1,3 +1,10 @@
+## 0.1.1
+
+* Add README with documentation, examples, and parameter reference
+* Add banner and screenshot assets
+* Add playground example with 8 preset styles
+* Add MIT license
+
 ## 0.1.0
 
 * Initial release

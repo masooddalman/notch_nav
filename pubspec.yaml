@@ -1,6 +1,6 @@
 name: notch_nav
 description: "A highly customizable Flutter bottom navigation bar with a notch-style pop-up indicator supporting circle, square, and diamond shapes with gradient fills."
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/masooddalman/notch_nav
 repository: https://github.com/masooddalman/notch_nav
 issue_tracker: https://github.com/masooddalman/notch_nav/issues
