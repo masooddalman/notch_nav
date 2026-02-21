@@ -121,7 +121,7 @@ class NotchNav extends StatelessWidget {
 
   /// Corner radius of the notch where it meets the bar edge.
   /// Defaults to [notchMargin].
-  final double? notchCornerRadius;
+  final double notchCornerRadius;
 
   /// Creates a [NotchNav] widget.
   const NotchNav({
@@ -151,7 +151,7 @@ class NotchNav extends StatelessWidget {
     this.alignSelectedLabel = true,
     this.shape = NotchNavShape.circle,
     this.notchMargin = 6,
-    this.notchCornerRadius,
+    this.notchCornerRadius = 6,
   }) : assert(items.length >= 2, 'NotchNav requires at least 2 items'),
        assert(currentIndex >= 0, 'currentIndex must be non-negative'),
        assert(
@@ -368,14 +368,16 @@ class NotchNav extends StatelessWidget {
           ),
         );
       case NotchNavShape.square:
+        final cornerRadius = notchCornerRadius;
         return DecoratedBox(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(barBorderRadius),
+            borderRadius: BorderRadius.circular(cornerRadius),
             color: activeColor,
             boxShadow: shadow,
           ),
         );
       case NotchNavShape.diamond:
+        final cornerRadius = notchCornerRadius;
         // Shrink by 1/sqrt(2) so the rotated square fits within circleSize
         final diamondSize = circleSize / sqrt(2);
         return Center(
@@ -386,7 +388,7 @@ class NotchNav extends StatelessWidget {
               height: diamondSize,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(barBorderRadius * 0.4),
+                  borderRadius: BorderRadius.circular(cornerRadius),
                   color: activeColor,
                   boxShadow: shadow,
                 ),

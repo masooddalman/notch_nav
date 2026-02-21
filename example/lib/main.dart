@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: _items,
         margin: const EdgeInsets.all(0),
         notchCornerRadius: 4,
-        shape: NotchNavShape.square,
+        shape: NotchNavShape.circle,
         labelBehavior: NotchNavLabelBehavior.selectedOnly,
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
