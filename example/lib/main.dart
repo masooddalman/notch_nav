@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:notch_nav/notch_nav.dart';
 
+import 'playground.dart';
+
 void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
@@ -9,7 +11,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NotchNav Example',
+      title: 'NotchNav Playground',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true),
       home: const HomeScreen(),
@@ -26,6 +28,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  int _presetIndex = 0;
 
   static const _items = [
     NotchNavItem(icon: Icons.list_rounded, label: 'Home'),
@@ -34,34 +37,50 @@ class _HomeScreenState extends State<HomeScreen> {
     NotchNavItem(icon: Icons.people_rounded, label: 'People'),
   ];
 
-  static const _pages = ['Home', 'Journal', 'Maps', 'People'];
+  Preset get _preset => presets[_presetIndex];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.red,
-      body: Center(
-        child: Text(
-          _pages[_selectedIndex],
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    final preset = _preset;
+    final isDark = preset.scaffoldColor.computeLuminance() < 0.3;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 400),
+      color: preset.scaffoldColor,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: PresetList(
+            activeIndex: _presetIndex,
+            isDark: isDark,
+            onSelect: (index) => setState(() {
+              _presetIndex = index;
+              _selectedIndex = 0;
+            }),
+          ),
         ),
-      ),
-      bottomNavigationBar: NotchNav(
-        backgroundGradient: LinearGradient(
-          colors: [Colors.blue.shade100, Colors.purple.shade100],
+        bottomNavigationBar: NotchNav(
+          items: _items,
+          currentIndex: _selectedIndex,
+          onTap: (index) => setState(() => _selectedIndex = index),
+          shape: preset.shape,
+          labelBehavior: preset.labelBehavior,
+          backgroundColor: preset.backgroundColor ?? Colors.white,
+          backgroundGradient: preset.backgroundGradient,
+          activeColor: preset.activeColor ?? const Color(0xFF6C63FF),
+          activeGradient: preset.activeGradient,
+          activeIconColor: preset.activeIconColor ?? Colors.white,
+          inactiveIconColor:
+              preset.inactiveIconColor ?? const Color(0xFF9E9E9E),
+          labelColor: preset.labelColor ?? const Color(0xFF424242),
+          animationDuration: preset.animationDuration,
+          animationCurve: preset.animationCurve,
+          notchMargin: preset.notchMargin,
+          notchCornerRadius: preset.notchCornerRadius,
+          barBorderRadius: preset.barBorderRadius,
+          circleSize: preset.circleSize,
+          margin: preset.margin,
         ),
-        activeGradient: LinearGradient(
-          colors: [Colors.blue, Colors.purple],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        items: _items,
-        margin: const EdgeInsets.all(0),
-        notchCornerRadius: 4,
-        shape: NotchNavShape.circle,
-        labelBehavior: NotchNavLabelBehavior.selectedOnly,
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
       ),
     );
   }
