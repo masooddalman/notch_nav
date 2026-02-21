@@ -1,3 +1,5 @@
+import 'dart:math' show atan2, pi, sqrt;
+
 import 'package:flutter/material.dart';
 
 import 'notch_nav_item.dart';
@@ -99,6 +101,13 @@ class NotchNav extends StatelessWidget {
   /// Whether the selected item's label shifts up to align with unselected items' icons.
   final bool alignSelectedLabel;
 
+  /// Gap between the active circle and the notch edge in the bar.
+  final double notchMargin;
+
+  /// Corner radius of the notch where it meets the bar edge.
+  /// Defaults to [notchMargin].
+  final double? notchCornerRadius;
+
   /// Creates a [NotchNav] widget.
   const NotchNav({
     super.key,
@@ -122,9 +131,11 @@ class NotchNav extends StatelessWidget {
     this.barShadow,
     this.circleShadow,
     this.animationDuration = const Duration(milliseconds: 300),
-    this.animationCurve = Curves.easeInOut,
+    this.animationCurve = Curves.easeOutCirc,
     this.labelBehavior = NotchNavLabelBehavior.selectedOnly,
     this.alignSelectedLabel = true,
+    this.notchMargin = 6,
+    this.notchCornerRadius,
   }) : assert(items.length >= 2, 'NotchNav requires at least 2 items'),
        assert(currentIndex >= 0, 'currentIndex must be non-negative'),
        assert(
@@ -165,29 +176,40 @@ class NotchNav extends StatelessWidget {
                 horizontalPadding +
                 currentIndex * itemWidth +
                 (itemWidth - circleSize) / 2;
+            final circleCenterX = circleLeft + circleSize / 2;
 
             return Stack(
               children: [
-                // Bar background
+                // Bar background with notch cutout
                 Positioned(
                   left: 0,
                   right: 0,
                   bottom: 0,
                   height: barHeight,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: backgroundColor,
-                      borderRadius: BorderRadius.circular(barBorderRadius),
-                      boxShadow:
-                          barShadow ??
-                          const [
-                            BoxShadow(
-                              color: Color(0x14000000),
-                              blurRadius: 16,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                    ),
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(end: circleCenterX),
+                    duration: animationDuration,
+                    curve: animationCurve,
+                    builder: (context, notchX, _) {
+                      return CustomPaint(
+                        painter: _NotchBarPainter(
+                          notchCenterX: notchX,
+                          notchRadius: circleSize / 2 + notchMargin,
+                          filletRadius: notchCornerRadius ?? notchMargin,
+                          backgroundColor: backgroundColor,
+                          borderRadius: barBorderRadius,
+                          shadows:
+                              barShadow ??
+                              const [
+                                BoxShadow(
+                                  color: Color(0x14000000),
+                                  blurRadius: 16,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                        ),
+                      );
+                    },
                   ),
                 ),
                 // Sliding circle (always at top, moves horizontally)
@@ -321,4 +343,128 @@ class NotchNav extends StatelessWidget {
       ),
     );
   }
+}
+
+class _NotchBarPainter extends CustomPainter {
+  final double notchCenterX;
+  final double notchRadius;
+  final double filletRadius;
+  final Color backgroundColor;
+  final double borderRadius;
+  final List<BoxShadow> shadows;
+
+  const _NotchBarPainter({
+    required this.notchCenterX,
+    required this.notchRadius,
+    required this.filletRadius,
+    required this.backgroundColor,
+    required this.borderRadius,
+    required this.shadows,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _buildPath(size);
+
+    // Draw shadows
+    for (final shadow in shadows) {
+      final shadowPaint = Paint()
+        ..color = shadow.color
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, shadow.blurSigma);
+      canvas.save();
+      canvas.translate(shadow.offset.dx, shadow.offset.dy);
+      canvas.drawPath(path, shadowPaint);
+      canvas.restore();
+    }
+
+    // Draw fill
+    canvas.drawPath(path, Paint()..color = backgroundColor);
+  }
+
+  Path _buildPath(Size size) {
+    final r = borderRadius;
+    final nr = notchRadius;
+    final cx = notchCenterX;
+    final rf = filletRadius;
+
+    // Fillet center is at (fx, rf), tangent to y=0 and externally tangent
+    // to the notch circle. Distance from notch center to fillet center = nr + rf.
+    final filletOffsetX = sqrt(nr * nr + 2 * nr * rf);
+
+    // Tangent point where fillet meets the notch arc
+    final totalDist = nr + rf;
+    final tpx = nr * filletOffsetX / totalDist;
+    final tpy = nr * rf / totalDist;
+
+    // Fillet arc: direction from fillet center to tangent point
+    final fdx = filletOffsetX - tpx;
+    final fdy = tpy - rf;
+    final filletAngle = atan2(fdy, fdx);
+    final filletSweep = filletAngle + pi / 2; // CW from top to tangent point
+
+    // Notch arc: CCW sweep through the bottom
+    final notchStartAngle = atan2(tpy, -tpx);
+    final notchSweep = atan2(tpy, tpx) - notchStartAngle; // negative = CCW
+
+    final path = Path();
+
+    // Start at top of left edge (after top-left corner)
+    path.moveTo(0, r);
+    path.arcToPoint(Offset(r, 0), radius: Radius.circular(r));
+
+    // Top edge to left fillet start
+    path.lineTo(cx - filletOffsetX, 0);
+
+    // Left fillet arc
+    path.arcTo(
+      Rect.fromCircle(center: Offset(cx - filletOffsetX, rf), radius: rf),
+      -pi / 2,
+      filletSweep,
+      false,
+    );
+
+    // Main notch arc
+    path.arcTo(
+      Rect.fromCircle(center: Offset(cx, 0), radius: nr),
+      notchStartAngle,
+      notchSweep,
+      false,
+    );
+
+    // Right fillet arc
+    path.arcTo(
+      Rect.fromCircle(center: Offset(cx + filletOffsetX, rf), radius: rf),
+      atan2(fdy, -fdx),
+      filletSweep,
+      false,
+    );
+
+    // Top edge to top-right corner
+    path.lineTo(size.width - r, 0);
+    path.arcToPoint(Offset(size.width, r), radius: Radius.circular(r));
+
+    // Right edge
+    path.lineTo(size.width, size.height - r);
+    path.arcToPoint(
+      Offset(size.width - r, size.height),
+      radius: Radius.circular(r),
+    );
+
+    // Bottom edge
+    path.lineTo(r, size.height);
+    path.arcToPoint(Offset(0, size.height - r), radius: Radius.circular(r));
+
+    // Left edge back to start
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(_NotchBarPainter old) =>
+      old.notchCenterX != notchCenterX ||
+      old.notchRadius != notchRadius ||
+      old.filletRadius != filletRadius ||
+      old.backgroundColor != backgroundColor ||
+      old.borderRadius != borderRadius;
 }

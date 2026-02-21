@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE8E4F0),
+      backgroundColor: Colors.red,
       body: Center(
         child: Text(
           _pages[_selectedIndex],
@@ -48,6 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: NotchNav(
         items: _items,
+        margin: const EdgeInsets.all(0),
+        notchCornerRadius: 8,
         labelBehavior: NotchNavLabelBehavior.selectedOnly,
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
