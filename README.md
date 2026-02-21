@@ -19,7 +19,7 @@ Add `notch_nav` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  notch_nav: ^0.0.1
+  notch_nav: ^0.1.0
 ```
 
 Then run:
