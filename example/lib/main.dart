@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:notch_nav/notch_nav.dart';
 
 import 'playground.dart';
+import 'rail_example.dart';
 
 void main() => runApp(const MyApp());
 
@@ -57,6 +58,22 @@ class _HomeScreenState extends State<HomeScreen> {
               _presetIndex = index;
               _selectedIndex = 0;
             }),
+            trailing: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: TextButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RailExampleScreen(),
+                  ),
+                ),
+                icon: Icon(Icons.view_sidebar_rounded, color: isDark ? Colors.white70 : Colors.black54),
+                label: Text(
+                  'Try NotchRail',
+                  style: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
+                ),
+              ),
+            ),
           ),
         ),
         bottomNavigationBar: NotchNav(
