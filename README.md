@@ -2,16 +2,18 @@
 
 # NotchNav
 
-A highly customizable Flutter bottom navigation bar with a notch-style pop-up indicator. The selected item rises above the bar inside an animated shape, with a smooth cutout notch in the bar background.
+A highly customizable Flutter bottom navigation bar and vertical navigation rail with a notch-style pop-up indicator. The selected item rises above the bar/rail inside an animated shape, with a smooth cutout notch in the background.
 
 ## Features
 
+- **Two widgets**: `NotchNav` (bottom bar) and `NotchRail` (vertical rail)
 - Three indicator shapes: **circle**, **square**, and **diamond**
-- Solid colors or **gradient** fills for both the bar and the indicator
+- Solid colors or **gradient** fills for both the background and the indicator
 - Configurable **animation** duration and curve
 - Label visibility control (selected-only or hidden)
-- Adjustable bar height, corner radius, icon size, circle size, notch margin, and more
+- Adjustable sizing, corner radius, icon size, circle size, notch margin, and more
 - Smooth fillet corners on the notch cutout
+- **NotchRail** supports left/right alignment and start/spaceEvenly item distribution
 
 ## Installation
 
@@ -19,7 +21,7 @@ Add `notch_nav` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  notch_nav: ^0.1.1
+  notch_nav: ^0.2.0
 ```
 
 Then run:
@@ -29,6 +31,8 @@ flutter pub get
 ```
 
 ## Quick Start
+
+### NotchNav (Bottom Bar)
 
 ```dart
 import 'package:notch_nav/notch_nav.dart';
@@ -41,6 +45,23 @@ NotchNav(
   ],
   currentIndex: _selectedIndex,
   onTap: (index) => setState(() => _selectedIndex = index),
+)
+```
+
+### NotchRail (Vertical Rail)
+
+```dart
+import 'package:notch_nav/notch_nav.dart';
+
+NotchRail(
+  items: const [
+    NotchNavItem(icon: Icons.home, label: 'Home'),
+    NotchNavItem(icon: Icons.search, label: 'Search'),
+    NotchNavItem(icon: Icons.person, label: 'Profile'),
+  ],
+  currentIndex: _selectedIndex,
+  onTap: (index) => setState(() => _selectedIndex = index),
+  alignment: NotchRailAlignment.left,
 )
 ```
 
@@ -59,7 +80,7 @@ NotchNav(
 
 ### Colors
 
-Set solid colors for the bar background and active indicator:
+Set solid colors for the background and active indicator:
 
 ```dart
 NotchNav(
@@ -109,6 +130,31 @@ Show labels only for the selected item, or hide them entirely:
 ```dart
 NotchNav(
   labelBehavior: NotchNavLabelBehavior.none,
+  // ...
+)
+```
+
+### Rail Alignment
+
+Place the rail on the left or right side of the screen:
+
+```dart
+NotchRail(
+  alignment: NotchRailAlignment.left,  // or .right
+  // ...
+)
+```
+
+### Rail Items Alignment
+
+Control how items are distributed vertically:
+
+```dart
+NotchRail(
+  itemsAlignment: NotchRailItemsAlignment.start,       // items at top (default)
+  // or
+  itemsAlignment: NotchRailItemsAlignment.spaceEvenly,  // spread across full height
+  itemExtent: 80,  // optional custom item height (only for start alignment)
   // ...
 )
 ```
@@ -164,7 +210,13 @@ NotchNav(
 
 https://github.com/user-attachments/assets/6b67c04f-50bb-4aba-83b2-0c0e9f494c5e
 
-## All Parameters
+## NotchRail
+| | | |
+|:---:|:---:|:---|
+| ![notchRail1](assets/notchRail1.jpg) | ![notchRail2](assets/notchRail2.jpg) | ![notchRail3](assets/notchRail3.jpg) |
+
+
+## NotchNav Parameters
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
@@ -193,6 +245,41 @@ https://github.com/user-attachments/assets/6b67c04f-50bb-4aba-83b2-0c0e9f494c5e
 | `margin` | `EdgeInsets` | `h:20, v:12` | Outer margin |
 | `horizontalPadding` | `double` | `16` | Inner horizontal padding |
 | `barShadow` | `List<BoxShadow>?` | subtle shadow | Bar shadows |
+| `circleShadow` | `List<BoxShadow>?` | colored shadow | Indicator shadows |
+| `animationDuration` | `Duration` | `300ms` | Animation duration |
+| `animationCurve` | `Curve` | `easeOutCirc` | Animation curve |
+
+## NotchRail Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `items` | `List<NotchNavItem>` | required | Navigation items (min 2) |
+| `currentIndex` | `int` | required | Selected item index |
+| `onTap` | `ValueChanged<int>` | required | Tap callback |
+| `alignment` | `NotchRailAlignment` | `left` | Rail side (left or right) |
+| `itemsAlignment` | `NotchRailItemsAlignment` | `start` | Item distribution |
+| `itemExtent` | `double?` | `circleSize + 16` | Item height (start mode) |
+| `shape` | `NotchNavShape` | `circle` | Indicator shape |
+| `backgroundColor` | `Color` | `Colors.white` | Rail background color |
+| `backgroundGradient` | `Gradient?` | `null` | Rail background gradient |
+| `activeColor` | `Color` | `#6C63FF` | Indicator color |
+| `activeGradient` | `Gradient?` | `null` | Indicator gradient |
+| `activeIconColor` | `Color` | `Colors.white` | Selected icon color |
+| `inactiveIconColor` | `Color` | `#9E9E9E` | Unselected icon color |
+| `labelColor` | `Color` | `#424242` | Label text color |
+| `labelStyle` | `TextStyle?` | `null` | Label text style override |
+| `labelBehavior` | `NotchNavLabelBehavior` | `selectedOnly` | Label visibility |
+| `railWidth` | `double` | `72` | Rail width |
+| `railBorderRadius` | `double` | `16` | Rail corner radius |
+| `circleSize` | `double` | `52` | Indicator diameter |
+| `circleOffset` | `double?` | `circleSize / 2` | Pop-out distance |
+| `iconSize` | `double` | `26` | Icon size |
+| `labelFontSize` | `double` | `10` | Label font size |
+| `notchMargin` | `double` | `6` | Gap around indicator |
+| `notchCornerRadius` | `double` | `6` | Notch fillet radius |
+| `margin` | `EdgeInsets` | `h:8, v:20` | Outer margin |
+| `verticalPadding` | `double` | `16` | Inner vertical padding |
+| `railShadow` | `List<BoxShadow>?` | subtle shadow | Rail shadows |
 | `circleShadow` | `List<BoxShadow>?` | colored shadow | Indicator shadows |
 | `animationDuration` | `Duration` | `300ms` | Animation duration |
 | `animationCurve` | `Curve` | `easeOutCirc` | Animation curve |

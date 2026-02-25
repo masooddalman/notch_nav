@@ -1,3 +1,12 @@
+## 0.2.0
+
+* Add `NotchRail` — a vertical navigation rail with the same notch-style indicator
+* Support left and right rail alignment (`NotchRailAlignment`)
+* Support start and spaceEvenly item distribution (`NotchRailItemsAlignment`)
+* Optional `itemExtent` for custom item height in start alignment
+* Add NotchRail playground example with preset styles
+* Add web platform support to example
+
 ## 0.1.1
 
 * Add README with documentation, examples, and parameter reference
