@@ -167,12 +167,14 @@ class PresetList extends StatelessWidget {
   final int activeIndex;
   final ValueChanged<int> onSelect;
   final bool isDark;
+  final Widget? trailing;
 
   const PresetList({
     super.key,
     required this.activeIndex,
     required this.onSelect,
     required this.isDark,
+    this.trailing,
   });
 
   @override
@@ -275,6 +277,7 @@ class PresetList extends StatelessWidget {
             },
           ),
         ),
+        if (trailing != null) trailing!,
       ],
     );
   }
