@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:notch_nav/notch_nav.dart';
 
+import 'playground.dart';
+
 class RailExampleScreen extends StatefulWidget {
   const RailExampleScreen({super.key});
 
@@ -10,8 +12,8 @@ class RailExampleScreen extends StatefulWidget {
 
 class _RailExampleScreenState extends State<RailExampleScreen> {
   int _selectedIndex = 0;
+  int _presetIndex = 0;
   NotchRailAlignment _alignment = NotchRailAlignment.left;
-  NotchNavShape _shape = NotchNavShape.circle;
 
   static const _items = [
     NotchNavItem(icon: Icons.home_rounded, label: 'Home'),
@@ -20,61 +22,86 @@ class _RailExampleScreenState extends State<RailExampleScreen> {
     NotchNavItem(icon: Icons.person_rounded, label: 'Profile'),
   ];
 
-  static const _pages = ['Home', 'Search', 'Likes', 'Profile'];
+  Preset get _preset => presets[_presetIndex];
 
   @override
   Widget build(BuildContext context) {
+    final preset = _preset;
+    final isDark = preset.scaffoldColor.computeLuminance() < 0.3;
+
     final rail = NotchRail(
       items: _items,
       currentIndex: _selectedIndex,
       onTap: (index) => setState(() => _selectedIndex = index),
       alignment: _alignment,
-      shape: _shape,
-      activeColor: const Color(0xFF6C63FF),
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 20),
+      shape: preset.shape,
+      labelBehavior: preset.labelBehavior,
+      backgroundColor: preset.backgroundColor ?? Colors.white,
+      backgroundGradient: preset.backgroundGradient,
+      activeColor: preset.activeColor ?? const Color(0xFF6C63FF),
+      activeGradient: preset.activeGradient,
+      activeIconColor: preset.activeIconColor ?? Colors.white,
+      inactiveIconColor: preset.inactiveIconColor ?? const Color(0xFF9E9E9E),
+      labelColor: preset.labelColor ?? const Color(0xFF424242),
+      animationDuration: preset.animationDuration,
+      animationCurve: preset.animationCurve,
+      notchMargin: preset.notchMargin,
+      notchCornerRadius: preset.notchCornerRadius,
+      railBorderRadius: preset.barBorderRadius,
+      circleSize: preset.circleSize,
+      margin: EdgeInsets.symmetric(
+        horizontal: preset.margin.vertical / 2,
+        vertical: preset.margin.horizontal / 2,
+      ),
     );
 
     final body = Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            _pages[_selectedIndex],
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 32),
-          // Controls
-          SegmentedButton<NotchRailAlignment>(
-            segments: const [
-              ButtonSegment(value: NotchRailAlignment.left, label: Text('Left')),
-              ButtonSegment(
-                value: NotchRailAlignment.right,
-                label: Text('Right'),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 400),
+        color: preset.scaffoldColor,
+        child: Column(
+          children: [
+            // Alignment toggle
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: SegmentedButton<NotchRailAlignment>(
+                segments: const [
+                  ButtonSegment(
+                    value: NotchRailAlignment.left,
+                    label: Text('Left'),
+                  ),
+                  ButtonSegment(
+                    value: NotchRailAlignment.right,
+                    label: Text('Right'),
+                  ),
+                ],
+                selected: {_alignment},
+                onSelectionChanged: (v) =>
+                    setState(() => _alignment = v.first),
               ),
-            ],
-            selected: {_alignment},
-            onSelectionChanged: (v) => setState(() => _alignment = v.first),
-          ),
-          const SizedBox(height: 12),
-          SegmentedButton<NotchNavShape>(
-            segments: const [
-              ButtonSegment(value: NotchNavShape.circle, label: Text('Circle')),
-              ButtonSegment(value: NotchNavShape.square, label: Text('Square')),
-              ButtonSegment(
-                value: NotchNavShape.diamond,
-                label: Text('Diamond'),
+            ),
+            // Preset list
+            Expanded(
+              child: PresetList(
+                activeIndex: _presetIndex,
+                isDark: isDark,
+                onSelect: (index) => setState(() {
+                  _presetIndex = index;
+                  _selectedIndex = 0;
+                }),
               ),
-            ],
-            selected: {_shape},
-            onSelectionChanged: (v) => setState(() => _shape = v.first),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
 
     return Scaffold(
+      backgroundColor: preset.scaffoldColor,
       appBar: AppBar(
-        title: const Text('NotchRail Example'),
+        title: const Text('NotchRail Playground'),
+        backgroundColor: Colors.transparent,
+        foregroundColor: isDark ? Colors.white : Colors.black87,
       ),
       body: SafeArea(
         child: Row(

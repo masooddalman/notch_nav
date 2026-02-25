@@ -14,6 +14,15 @@ enum NotchRailAlignment {
   right,
 }
 
+/// How items are distributed vertically within the rail.
+enum NotchRailItemsAlignment {
+  /// Items are aligned to the top with fixed spacing between them (default).
+  start,
+
+  /// Items are spread evenly across the full rail height.
+  spaceEvenly,
+}
+
 /// A vertical navigation rail with a notch-style pop-out effect on the active item.
 class NotchRail extends StatelessWidget {
   final List<NotchNavItem> items;
@@ -44,6 +53,8 @@ class NotchRail extends StatelessWidget {
   final double notchMargin;
   final double notchCornerRadius;
   final NotchRailAlignment alignment;
+  final NotchRailItemsAlignment itemsAlignment;
+  final double? itemExtent;
 
   const NotchRail({
     super.key,
@@ -75,6 +86,8 @@ class NotchRail extends StatelessWidget {
     this.notchMargin = 6,
     this.notchCornerRadius = 6,
     this.alignment = NotchRailAlignment.left,
+    this.itemsAlignment = NotchRailItemsAlignment.start,
+    this.itemExtent,
   }) : assert(items.length >= 2, 'NotchRail requires at least 2 items'),
        assert(currentIndex >= 0, 'currentIndex must be non-negative'),
        assert(
@@ -113,7 +126,12 @@ class NotchRail extends StatelessWidget {
           builder: (context, constraints) {
             final contentHeight =
                 constraints.maxHeight - 2 * verticalPadding;
-            final itemHeight = contentHeight / items.length;
+            final bool isSpaceEvenly =
+                itemsAlignment == NotchRailItemsAlignment.spaceEvenly;
+            final double itemHeight =
+                isSpaceEvenly
+                    ? contentHeight / items.length
+                    : (itemExtent ?? circleSize + 16);
             final circleTop =
                 verticalPadding +
                 currentIndex * itemHeight +
@@ -176,9 +194,14 @@ class NotchRail extends StatelessWidget {
                   left: railLeft,
                   width: railWidth,
                   top: verticalPadding,
-                  bottom: verticalPadding,
+                  bottom: isSpaceEvenly ? verticalPadding : null,
                   child: Column(
-                    children: List.generate(items.length, _buildNavItem),
+                    mainAxisSize:
+                        isSpaceEvenly ? MainAxisSize.max : MainAxisSize.min,
+                    children: List.generate(
+                      items.length,
+                      (i) => _buildNavItem(i, expanded: isSpaceEvenly),
+                    ),
                   ),
                 ),
               ],
@@ -189,7 +212,7 @@ class NotchRail extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(int index) {
+  Widget _buildNavItem(int index, {bool expanded = true}) {
     final item = items[index];
     final isSelected = index == currentIndex;
 
@@ -200,8 +223,7 @@ class NotchRail extends StatelessWidget {
             : railWidth - circleSize / 2 + (circleSize - iconSize) / 2;
     final unselectedIconLeft = (railWidth - iconSize) / 2;
 
-    return Expanded(
-      child: Semantics(
+    final child = Semantics(
         label: item.label,
         selected: isSelected,
         child: GestureDetector(
@@ -261,8 +283,13 @@ class NotchRail extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
+
+    if (expanded) {
+      return Expanded(child: child);
+    }
+    final height = itemExtent ?? circleSize + 16;
+    return SizedBox(height: height, child: child);
   }
 
   Widget _buildIndicator() {
