@@ -2,6 +2,14 @@
 
 # NotchNav
 
+<a href="https://pub.dev/packages/notch_nav">
+  <img src="https://pub.dev/static/hash-btvv2vbt/img/pub-dev-logo.svg" alt="pub.dev" width="180" />
+</a>
+
+[![pub package](https://img.shields.io/pub/v/notch_nav.svg)](https://pub.dev/packages/notch_nav)
+[![likes](https://img.shields.io/pub/likes/notch_nav)](https://pub.dev/packages/notch_nav/score)
+[![pub points](https://img.shields.io/pub/points/notch_nav)](https://pub.dev/packages/notch_nav/score)
+
 A highly customizable Flutter bottom navigation bar and vertical navigation rail with a notch-style pop-up indicator. The selected item rises above the bar/rail inside an animated shape, with a smooth cutout notch in the background.
 
 ## Features
